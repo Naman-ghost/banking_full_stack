@@ -35,8 +35,10 @@ const MainPage = () => {
           <li><Link to="/" className="text-white">Dashboard</Link></li>
           <li><Link to="/create" className="text-white">Payment</Link></li>
           <li><Link to="/contact" className="text-white">Contact Us</Link></li>
-          <li><Link to={`/Past_Payments/${userId}`} className="text-white">E-Statement</Link></li>
+          <li><Link to={`/past-payment/${userId}`} className="text-white">E-Statement</Link></li>
           <li><Link to= {`/Home`}className="text-white">Add benefinciary</Link></li>
+          <li><Link to={`/fds/${userId}`} className="text-white">Fixed Deposits</Link></li>
+          <li><Link to={`/fixed-deposits/${userId}`} className="text-white">Create FD</Link></li>
         </ul>
       </div>
       <div className="flex-grow-1">

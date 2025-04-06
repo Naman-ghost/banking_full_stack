@@ -62,7 +62,7 @@ export default function MakePayments() {
           </div>
 
           <div className="flex items-center border p-3 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
-            <FaDollarSign className="text-gray-500 mr-2" />
+            <div className="text-gray-500 mr-2" />
             <input
               type="number"
               placeholder="Amount"

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 export default function PastPayments() {
+  const { userId } = useParams(); // Get userId from URL
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const userId = localStorage.getItem('userId'); // Assuming user ID is stored in localStorage
 
   useEffect(() => {
     if (!userId) {
@@ -14,6 +15,7 @@ export default function PastPayments() {
       setLoading(false);
       return;
     }
+
     axios.get(`http://localhost:8081/past-payments/${userId}`)
       .then(response => {
         setPayments(response.data);
@@ -26,7 +28,12 @@ export default function PastPayments() {
   }, [userId]);
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
+  if (error) return (
+    <div>
+      <p>{error}</p>
+      <button onClick={() => navigate('/login')}>Go to Login</button>
+    </div>
+  );
 
   return (
     <div>
@@ -37,6 +44,8 @@ export default function PastPayments() {
         <table>
           <thead>
             <tr>
+              <th>Transaction ID</th>
+              <th>Sender ID</th>
               <th>Receiver ID</th>
               <th>Amount</th>
               <th>Method</th>
@@ -46,7 +55,9 @@ export default function PastPayments() {
           </thead>
           <tbody>
             {payments.map((payment) => (
-              <tr key={payment.id}>
+              <tr key={payment.payment_id}>
+                <td>{payment.payment_id}</td>
+                <td>{payment.sender_account_id}</td>
                 <td>{payment.receiver_account_id}</td>
                 <td>₹{payment.payment_amount}</td>
                 <td>{payment.payment_method}</td>
