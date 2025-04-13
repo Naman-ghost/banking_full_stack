@@ -191,6 +191,15 @@ app.get('/mainpage/:userId', (req, res) => {
     });
 });
 
+
+
+
+//    LOGIN PAGE 
+
+
+
+
+
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
@@ -224,6 +233,13 @@ app.post('/login', (req, res) => {
         });
     });
 });
+
+
+//
+
+
+
+
 app.get('/read/:id', (req, res) => {
     const id = req.params.id;
     const sql = "SELECT * FROM alpha WHERE id = ?";
@@ -306,100 +322,161 @@ app.get('/past-payments/:userId', (req, res) => {
 
   
 
+
+
+
+//    MAKE PAYMENT
+
+
+
+
+
+
+
+
   
-  app.post('/make-payment/:id', (req, res) => {
-    const { id } = req.params; 
+app.post('/make-payment/:id', (req, res) => {
+    const { id: senderId } = req.params; // senderId from URL
     const { receiverId, amount, method, description } = req.body;
   
     if (!receiverId || !amount || isNaN(amount) || amount <= 0) {
       return res.status(400).json({ message: "Valid receiver ID and amount are required" });
     }
   
-    db.beginTransaction((err) => {
+    if (receiverId === senderId) {
+      return res.status(400).json({ message: "Sender and receiver cannot be the same user" });
+    }
+  
+    // Ensure the receiver exists
+    db.query("SELECT id FROM customers WHERE id = ?", [receiverId], (err, receiverCheck) => {
       if (err) {
-        console.error("Transaction error:", err);
-        return res.status(500).json({ message: "Transaction initiation failed" });
+        console.error("Receiver validation error:", err);
+        return res.status(500).json({ message: "Server error" });
       }
   
-      // JOIN to get both sender and receiver info
-      const balanceQuery = `
-        SELECT 
-          sender.id AS sender_id, sender.bank_balance AS sender_balance, sender.username AS sender_name,
-          receiver.id AS receiver_id, receiver.bank_balance AS receiver_balance, receiver.username AS receiver_name
-        FROM customers AS sender
-        JOIN customers AS receiver ON receiver.id = ?
-        WHERE sender.id = ?
-      `;
+      if (receiverCheck.length === 0) {
+        return res.status(403).json({ message: "Invalid receiver ID" });
+      }
   
-      db.query(balanceQuery, [receiverId, id], (err, result) => {
+      db.beginTransaction((err) => {
         if (err) {
-          return db.rollback(() => {
-            console.error("Error fetching balances:", err);
-            res.status(500).json({ message: "Error retrieving balances" });
-          });
+          console.error("Transaction error:", err);
+          return res.status(500).json({ message: "Transaction initiation failed" });
         }
   
-        if (result.length === 0 || result[0].sender_balance < amount) {
-          return db.rollback(() => {
-            res.status(400).json({ message: "Insufficient balance or invalid user(s)" });
-          });
-        }
-  
-        // Deduct from sender
-        db.query("UPDATE customers SET bank_balance = bank_balance - ? WHERE id = ?", [amount, id], (err) => {
+        // Fetch sender info
+        db.query("SELECT id, bank_balance, username FROM customers WHERE id = ?", [senderId], (err, senderResult) => {
           if (err) {
             return db.rollback(() => {
-              console.error("Error deducting sender balance:", err);
-              res.status(500).json({ message: "Error deducting sender balance" });
+              console.error("Error fetching sender:", err);
+              res.status(500).json({ message: "Error fetching sender" });
             });
           }
   
-          // Add to receiver
-          db.query("UPDATE customers SET bank_balance = bank_balance + ? WHERE id = ?", [amount, receiverId], (err) => {
+          if (senderResult.length === 0) {
+            return db.rollback(() => {
+              res.status(403).json({ message: "Sender not found" });
+            });
+          }
+  
+          const sender = senderResult[0];
+  
+          // Fetch receiver info
+          db.query("SELECT id, username FROM customers WHERE id = ?", [receiverId], (err, receiverResult) => {
             if (err) {
               return db.rollback(() => {
-                console.error("Error adding receiver balance:", err);
-                res.status(500).json({ message: "Error adding receiver balance" });
+                console.error("Error fetching receiver:", err);
+                res.status(500).json({ message: "Error fetching receiver" });
               });
             }
   
-            // Record the payment
-            const insertQuery = `
-              INSERT INTO past_payments 
-                (sender_account_id, receiver_account_id, payment_amount, payment_date, payment_status, payment_method, description) 
-              VALUES (?, ?, ?, NOW(), 'Completed', ?, ?)
-            `;
+            const receiver = receiverResult[0];
   
-            db.query(insertQuery, [id, receiverId, amount, method, description], (err) => {
-              if (err) {
-                return db.rollback(() => {
-                  console.error("Error recording payment:", err);
-                  res.status(500).json({ message: "Error recording payment" });
-                });
-              }
+            if (sender.bank_balance < amount) {
+              return db.rollback(() => {
+                res.status(403).json({ message: "Insufficient balance" });
+              });
+            }
   
-              db.commit((err) => {
+            // Deduct from sender
+            db.query(
+              "UPDATE customers SET bank_balance = bank_balance - ? WHERE id = ?",
+              [amount, senderId],
+              (err) => {
                 if (err) {
                   return db.rollback(() => {
-                    console.error("Transaction commit failed:", err);
-                    res.status(500).json({ message: "Transaction commit failed" });
+                    console.error("Error deducting sender balance:", err);
+                    res.status(500).json({ message: "Error deducting sender balance" });
                   });
                 }
   
-                const sender = result[0].sender_name;
-                const receiver = result[0].receiver_name;
+                // Add to receiver
+                db.query(
+                  "UPDATE customers SET bank_balance = bank_balance + ? WHERE id = ?",
+                  [amount, receiverId],
+                  (err) => {
+                    if (err) {
+                      return db.rollback(() => {
+                        console.error("Error adding receiver balance:", err);
+                        res.status(500).json({ message: "Error adding receiver balance" });
+                      });
+                    }
   
-                res.json({
-                  message: `₹${amount} successfully transferred from ${sender} to ${receiver}`
-                });
-              });
-            });
+                    // Record payment
+                    const insertQuery = `
+                      INSERT INTO past_payments 
+                        (sender_account_id, receiver_account_id, payment_amount, payment_date, payment_status, payment_method, description) 
+                      VALUES (?, ?, ?, NOW(), 'Completed', ?, ?)
+                    `;
+  
+                    db.query(
+                      insertQuery,
+                      [senderId, receiverId, amount, method, description],
+                      (err) => {
+                        if (err) {
+                          return db.rollback(() => {
+                            console.error("Error recording payment:", err);
+                            res.status(500).json({ message: "Error recording payment" });
+                          });
+                        }
+  
+                        db.commit((err) => {
+                          if (err) {
+                            return db.rollback(() => {
+                              console.error("Transaction commit failed:", err);
+                              res.status(500).json({ message: "Transaction commit failed" });
+                            });
+                          }
+  
+                          res.json({
+                            message: `₹${amount} successfully transferred from ${sender.username} to ${receiver.username}`,
+                          });
+                        });
+                      }
+                    );
+                  }
+                );
+              }
+            );
           });
         });
       });
     });
   });
   
+  
+  
+  
+
+
+
+
+
+
+
+
+
+
 
 
 // app.post('/fixed-deposits', (req, res) => {
@@ -411,6 +488,16 @@ app.get('/past-payments/:userId', (req, res) => {
 //   });
 
 // Fix for /create-fd route
+
+
+
+
+
+
+// fixed-deposits
+
+
+
 app.post('/fixed-deposits', (req, res) => {
     const { userId, amount, interestRate, maturityDate } = req.body;
 
@@ -419,8 +506,7 @@ app.post('/fixed-deposits', (req, res) => {
     }
 
     const checkQuery = `
-        SELECT bank_balance, 
-               (SELECT COUNT(*) FROM fixed_deposits WHERE user_id = ? AND status = 'Active') AS active_fd_count
+        SELECT bank_balance
         FROM customers WHERE id = ?;
     `;
 
@@ -430,10 +516,10 @@ app.post('/fixed-deposits', (req, res) => {
             return res.status(500).json({ error: 'Transaction initiation failed' });
         }
 
-        db.query(checkQuery, [userId, userId], (err, result) => {
+        db.query(checkQuery, [userId], (err, result) => {
             if (err) {
                 return db.rollback(() => {
-                    console.error('Error checking FD:', err);
+                    console.error('Error checking bank balance:', err);
                     res.status(500).json({ error: 'Internal Server Error', details: err });
                 });
             }
@@ -444,20 +530,15 @@ app.post('/fixed-deposits', (req, res) => {
             }
 
             const bankBalance = result[0].bank_balance;
-            const activeFdCount = result[0].active_fd_count;
 
-            if (activeFdCount > 0) {
-                return db.rollback(() => {
-                    return res.status(400).json({ error: 'An active FD already exists' });
-                });
-            }
+            // Check if FD amount exceeds bank balance
             if (amount > bankBalance) {
                 return db.rollback(() => {
                     return res.status(400).json({ error: 'FD amount exceeds bank balance' });
                 });
             }
 
-            // Step 2: Create FD & Deduct Balance
+            // Step 2: Create FD
             const createFDQuery = `
                 INSERT INTO fixed_deposits (user_id, amount, interest_rate, maturity_date, status) 
                 VALUES (?, ?, ?, ?, 'Active')
@@ -502,6 +583,7 @@ app.post('/fixed-deposits', (req, res) => {
 });
 
 
+
 // FD Details Route (Fix for query params)
 app.get('/fds/:userId', (req, res) => {
     const userId = req.params.userId;
@@ -527,6 +609,275 @@ app.get('/fds/:userId', (req, res) => {
         res.json(results);
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+// VISVJIT 
+
+
+
+
+app.post('/add-customer', (req, res) => {
+    const {
+        username, password, email,
+        first_name, last_name, phone, address,
+        city, date_of_birth, gender
+    } = req.body;
+
+    db.query(`SELECT IFNULL(MAX(id), 0) + 1 AS nextId FROM customers`, (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        const nextId = result[0].nextId;
+
+        db.beginTransaction(err => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ success: false, error: err.message });
+            }
+
+            db.query(
+                `INSERT INTO customers (id, username, password, email, bank_balance) VALUES (?, ?, ?, ?, 0)`,
+                [nextId, username, password, email],
+                (err, result) => {
+                    if (err) {
+                        return db.rollback(() => {
+                            console.error(err);
+                            res.status(500).json({ success: false, error: err.message });
+                        });
+                    }
+
+                    db.query(
+                        `INSERT INTO customerinfo 
+                         (username, first_name, last_name, phone, address, city, date_of_birth, gender) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [username, first_name, last_name, phone, address, city, date_of_birth, gender],
+                        (err, result) => {
+                            if (err) {
+                                return db.rollback(() => {
+                                    console.error(err);
+                                    res.status(500).json({ success: false, error: err.message });
+                                });
+                            }
+
+                            db.commit(err => {
+                                if (err) {
+                                    return db.rollback(() => {
+                                        console.error(err);
+                                        res.status(500).json({ success: false, error: err.message });
+                                    });
+                                }
+
+                                res.json({ success: true, message: "Customer and info added!", customerId: nextId });
+                            });
+                        }
+                    );
+                }
+            );
+        });
+    });
+});
+
+// Deposit money
+app.post('/deposit', (req, res) => {
+    const { customerId, amount } = req.body;
+
+    if (amount <= 0) {
+        return res.status(400).json({ success: false, message: "Amount must be greater than 0" });
+    }
+
+    db.query(`SELECT * FROM customers WHERE id = ?`, [customerId], (err, customer) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        if (customer.length === 0) {
+            return res.status(404).json({ success: false, message: "Customer not found" });
+        }
+
+        db.query(
+            `UPDATE customers SET bank_balance = bank_balance + ? WHERE id = ?`,
+            [amount, customerId],
+            (err, result) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ success: false, error: err.message });
+                }
+
+                db.query(
+                    `INSERT INTO past_payments 
+                     (sender_account_id, receiver_account_id, payment_amount, payment_date, payment_status, payment_method, description)
+                     VALUES (?, NULL, ?, NOW(), 'Completed', 'Deposit', 'Deposit transaction')`,
+                    [customerId, amount],
+                    (err, result) => {
+                        if (err) {
+                            console.error(err);
+                            return res.status(500).json({ success: false, error: err.message });
+                        }
+
+                        res.json({ success: true, message: "Deposit successful!", paymentId: result.insertId });
+                    }
+                );
+            }
+        );
+    });
+});
+
+// Get customer info by ID
+app.get('/admin_customer/:id', (req, res) => {
+    const { id } = req.params;
+    db.query(`SELECT * FROM customers WHERE id = ?`, [id], (err, customer) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        if (customer.length === 0) {
+            return res.status(404).json({ success: false, message: "Customer not found" });
+        }
+
+        db.query(
+            `SELECT * FROM past_payments WHERE sender_account_id = ? OR receiver_account_id = ? ORDER BY payment_date DESC`,
+            [id, id],
+            (err, transactions) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ success: false, error: err.message });
+                }
+
+                res.json({ success: true, customer: customer[0], transactions });
+            }
+        );
+    });
+});
+
+// Get all customers
+app.get('/admin_customers', (req, res) => {
+    db.query("SELECT * FROM customers", (err, customers) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        res.json(customers);
+    });
+});
+
+// Delete customer
+app.delete('/admin_customers/:id', (req, res) => {
+    const { id } = req.params;
+    db.query(`SELECT * FROM customers WHERE id = ?`, [id], (err, customer) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        if (customer.length === 0) {
+            return res.status(404).json({ success: false, message: "Customer not found" });
+        }
+
+        db.query(`DELETE FROM customers WHERE id = ?`, [id], (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ success: false, error: err.message });
+            }
+
+            res.json({ success: true, message: "Customer deleted successfully!" });
+        });
+    });
+});
+
+// Get total number of customers
+app.get('/total-customers', (req, res) => {
+    db.query("SELECT COUNT(*) AS totalCustomers FROM customers", (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: "Error fetching customer count" });
+        }
+
+        res.json({ totalCustomers: result[0].totalCustomers });
+    });
+});
+
+// Get all transactions
+app.get('/admin_transactions', (req, res) => {
+    db.query(`
+        SELECT p.payment_id, 
+               c1.username AS sender, 
+               c2.username AS receiver,
+               p.payment_amount, 
+               p.payment_date, 
+               p.payment_method, 
+               p.description
+        FROM past_payments p
+        LEFT JOIN customers c1 ON p.sender_account_id = c1.id
+        LEFT JOIN customers c2 ON p.receiver_account_id = c2.id
+        ORDER BY p.payment_date DESC
+    `, (err, transactions) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        res.json({ success: true, transactions });
+    });
+});
+
+
+// Total number of transactions
+app.get('/total-transactions', (req, res) => {
+    db.query("SELECT COUNT(*) AS totalTransactions FROM past_payments", (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: "Error fetching transaction count" });
+        }
+
+        res.json({ totalTransactions: result[0].totalTransactions });
+    });
+});
+
+// Today's total transaction amount
+app.get('/today-transactions-amount', (req, res) => {
+    db.query(`
+        SELECT IFNULL(SUM(payment_amount), 0) AS totalToday
+        FROM past_payments
+        WHERE DATE(payment_date) = CURDATE()
+    `, (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: "Error fetching today's transaction amount" });
+        }
+
+        res.json({ totalToday: result[0].totalToday });
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

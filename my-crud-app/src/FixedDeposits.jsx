@@ -3,7 +3,7 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
 export default function FixedDeposits() {
-  const { userId } = useParams(); // Get userId from URL
+  const { userId } = useParams(); 
   const [amount, setAmount] = useState("");
   const [interestRate, setInterestRate] = useState(5.0);
   const [duration, setDuration] = useState(12);

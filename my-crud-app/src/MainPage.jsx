@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { CiBank } from "react-icons/ci";
@@ -10,6 +10,7 @@ import { FaUserCircle } from "react-icons/fa";
 const MainPage = () => {
   const { userId } = useParams();  
   const [userData, setUserData] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.log("User ID received:", userId);
@@ -23,7 +24,28 @@ const MainPage = () => {
     } else {
       console.error('User ID is undefined!');
     }
+
+    // Add event listener for beforeunload to warn user before refresh
+    const handleBeforeUnload = (event) => {
+      const message = "Page is refreshing which is not allowed. You will be logged out if you proceed.";
+      event.returnValue = message; // Standard for most browsers
+      return message; // Some browsers require this as well for confirmation
+    };
+
+    // Attach the beforeunload event
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Clean up the event listener on component unmount
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [userId]);
+
+  // Logout function
+  const handleLogout = () => {
+    // Optionally, clear authentication state or token here if needed
+    navigate('/login');
+  };
 
   return (
     <div className="d-flex min-vh-100">
@@ -38,7 +60,6 @@ const MainPage = () => {
           <li><Link to={`/make-payment/${userId}`} className="text-white">Payment</Link></li>
           <li><Link to="/contact" className="text-white">Contact Us</Link></li>
           <li><Link to={`/past-payment/${userId}`} className="text-white">E-Statement</Link></li>
-          <li><Link to="/Home" className="text-white">Add Beneficiary</Link></li>
           <li><Link to={`/fds/${userId}`} className="text-white">Fixed Deposits</Link></li>
           <li><Link to={`/fixed-deposits/${userId}`} className="text-white">Create FD</Link></li>
         </ul>
@@ -46,13 +67,20 @@ const MainPage = () => {
 
       {/* Main Content */}
       <div className="flex-grow-1">
+        {/* Top Navbar with Logout Button */}
+        <div className="d-flex justify-content-between p-4 bg-light shadow-sm">
+          <div className="d-flex align-items-center">
+            <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
+          </div>
+          <div className="d-flex space-x-6">
+            <div className='d-flex align-items-center space-x-2'> <CiBank /><span>Home</span></div>
+            <div className='d-flex align-items-center space-x-2'><MdOutlineContactPhone /><span>Contact Us</span></div>
+            <div className='d-flex align-items-center space-x-2'><IoReceiptOutline /><span>E-Statement</span></div>
+          </div>
+        </div>
+
         <div className="py-5 shadow-sm flex text-center p-4 ml-4 items-center">
           <h1 className="display-4 text-primary mr-6">User Information</h1>
-          <div className="flex space-x-6 ml-auto">
-            <div className='flex items-center space-x-2'> <CiBank /><span>Home</span></div>
-            <div className='flex items-center space-x-2'><MdOutlineContactPhone /><span>Contact Us</span></div>
-            <div className='flex items-center space-x-2'><IoReceiptOutline /><span>E-Statement</span></div>
-          </div>
         </div>
 
         <div className="container d-flex align-items-center justify-content-center mt-5">

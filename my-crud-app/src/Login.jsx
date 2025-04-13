@@ -28,7 +28,7 @@ export default function Login({ onLoginSuccess }) {
       if (response.ok) {
         if (data.userId) {
           onLoginSuccess(data.userId);
-          navigate(`/mainpage/${data.userId}`); 
+          navigate(`/mainpage/${data.userId}`); // Redirect after successful login
         } else {
           setErrorMessage('Login successful, but no user ID returned');
         }
@@ -38,6 +38,14 @@ export default function Login({ onLoginSuccess }) {
     } catch (error) {
       setErrorMessage('Failed to connect to server');
     }
+  };
+
+  // Logout function
+  const handleLogout = () => {
+    // You can reset the authentication state here
+    // For example, if you're storing user data in a global state or context, reset it here.
+    // Then, navigate to the mainpage route.
+    navigate('/');
   };
 
   return (
@@ -80,6 +88,16 @@ export default function Login({ onLoginSuccess }) {
             Login
           </button>
         </form>
+
+        {/* Logout button */}
+        <div className="mt-4">
+          <button 
+            onClick={handleLogout}
+            className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition duration-300"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   );

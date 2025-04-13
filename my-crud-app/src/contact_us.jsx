@@ -16,10 +16,10 @@ export default function ContactUs() {
             <p className="text-gray-700">Helpline: +91 123 456 7890</p>
             
             {/* Bank Address */}
-            <p className="text-gray-700">Bank Address: 123 Bank St, Mumbai, India</p>
+            <p className="text-gray-700">Bank Address: Lal Kila , New Delhi</p>
             
             {/* Email Address */}
-            <p className="text-gray-700">Email: contact@bank.com</p>
+            <p className="text-gray-700">Email: customersupport@finbanker.com</p>
           </div>
 
           {/* Optional: Add Social Media Links */}

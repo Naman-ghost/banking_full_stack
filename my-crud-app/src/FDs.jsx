@@ -24,7 +24,7 @@ export default function FDs() {
   return (
     <div className="container mt-5">
       <h2 className="mb-4">Your Fixed Deposits</h2>
-      <Link to="/fixed-deposits" className="btn btn-success mb-3">Create New FD</Link>
+      <Link to="/fixed-deposits/:userId" className="btn btn-success mb-3">Create New FD</Link>
       {fds.length === 0 ? (
         <p>No Fixed Deposits found.</p>
       ) : (
