@@ -12,6 +12,7 @@ import PastPayments from './PastPayments';
 import FDs from './FDs';
 import FixedDeposits from './FixedDeposits';
 import './App.css';
+import ContactUs from './contact_us';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -45,7 +46,9 @@ function App() {
         <Route path="/edit/:id" element={<Edit />} />
         <Route path="/delete/:id" element={<Delete />} />
         <Route path="/fixed-deposits/:userId" element={<FixedDeposits />} />
-        <Route path="/fds/:userId" element={<FixedDeposits />} />
+        <Route path="/fds/:userId" element={<FDs />} />
+        <Route path="/contact" element={<ContactUs />} />
+
 
       </Routes>
     </BrowserRouter>

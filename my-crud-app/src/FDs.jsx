@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom";  // Import useParams
 import { Link } from "react-router-dom";
 
 export default function FDs() {
+  const { userId } = useParams();  // Get userId from URL params
+
   const [fds, setFDs] = useState([]);
-  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
+    if (!userId) {
+      console.error("No userId found in URL parameters!");
+      return;
+    }
+
+    // Use userId from URL to fetch FD data
     axios
       .get(`http://localhost:8081/fds/${userId}`)
       .then((response) => setFDs(response.data))
