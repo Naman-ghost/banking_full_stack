@@ -9,11 +9,13 @@ export default function MakePayments() {
   const navigate = useNavigate();
   const { id: senderIdFromURL } = useParams();
   const [receiverId, setReceiverId] = useState("");
+  const [confirmReceiverId, setConfirmReceiverId] = useState("");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("RTGS");
   const [description, setDescription] = useState("");
-  const [message, setMessage] = useState("");
+  const [password, setPassword] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const warnBeforeUnload = (e) => {
@@ -29,33 +31,41 @@ export default function MakePayments() {
   }, [isConfirming]);
 
   const handleMakePayment = async () => {
-    if (!receiverId || !amount) {
+    // Check if the fields are valid
+    if (!receiverId || !confirmReceiverId || !amount || !password) {
       setMessage("Please fill in all required fields.");
       return;
     }
 
-    const confirmation = prompt("Type 'YES' to confirm the transaction.");
-    if (confirmation !== "YES") {
-      setMessage("Transaction cancelled.");
+    // Validate if receiver ID matches the confirmation
+    if (receiverId !== confirmReceiverId) {
+      setMessage("Receiver ID and confirmation do not match.");
       return;
     }
 
+    // Ask for confirmation to proceed
     setIsConfirming(true);
-    const enteredPassword = prompt("Enter your password to confirm the payment.");
-    if (!enteredPassword) {
-      setMessage("Transaction cancelled. No password provided.");
-      setIsConfirming(false);
-      return;
-    }
 
     try {
-      const response = await axios.post(`http://localhost:8081/make-payment/${senderIdFromURL}`, {
-        receiverId,
-        amount,
-        method,
-        description,
-        password: enteredPassword,
-      });
+      const response = await axios.post(
+        `http://localhost:8081/make-payment/${senderIdFromURL}`,
+        {
+          receiverId,
+          amount,
+          method,
+          description,
+          password,
+        }
+      );
+
+      // Check the response for password correctness
+      if (response.data.success === false && response.data.error === 'Incorrect password') {
+        setMessage("Incorrect password. Please try again.");
+        setIsConfirming(false);
+        return;
+      }
+
+      // If payment is successful
       setMessage(response.data.message || "Payment successful!");
     } catch (error) {
       console.error("Payment error:", error);
@@ -74,7 +84,7 @@ export default function MakePayments() {
           <h4>FinBanker</h4>
         </div>
         <ul className="list-unstyled">
-          <li><Link to={`/main/${senderIdFromURL}`} className="text-white d-block mb-2">Dashboard</Link></li>
+          <li><Link to={`/mainpage/${senderIdFromURL}`} className="text-white d-block mb-2">Dashboard</Link></li>
           <li><Link to={`/make-payment/${senderIdFromURL}`} className="text-white d-block mb-2 fw-bold">Payment</Link></li>
           <li><Link to={`/past-payment/${senderIdFromURL}`} className="text-white d-block mb-2">E-Statement</Link></li>
           <li><Link to={`/fds/${senderIdFromURL}`} className="text-white d-block mb-2">FD List</Link></li>
@@ -105,20 +115,37 @@ export default function MakePayments() {
             </div>
           </div>
 
-          <div className="mb-3">
-            <label>Receiver ID</label>
-            <div className="input-group">
-              <span className="input-group-text"><FaUser /></span>
-              <input
-                type="text"
-                className="form-control"
-                value={receiverId}
-                onChange={(e) => setReceiverId(e.target.value)}
-                placeholder="Enter receiver's user ID"
-              />
+          {/* Receiver ID and Confirm Receiver ID */}
+          <div className="row mb-3">
+            <div className="col-6">
+              <label>Receiver ID</label>
+              <div className="input-group">
+                <span className="input-group-text"><FaUser /></span>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={receiverId}
+                  onChange={(e) => setReceiverId(e.target.value)}
+                  placeholder="Enter receiver's user ID"
+                />
+              </div>
+            </div>
+            <div className="col-6">
+              <label>Confirm Receiver ID</label>
+              <div className="input-group">
+                <span className="input-group-text"><FaUser /></span>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={confirmReceiverId}
+                  onChange={(e) => setConfirmReceiverId(e.target.value)}
+                  placeholder="Confirm receiver's user ID"
+                />
+              </div>
             </div>
           </div>
 
+          {/* Amount */}
           <div className="mb-3">
             <label>Amount (₹)</label>
             <div className="input-group">
@@ -133,6 +160,7 @@ export default function MakePayments() {
             </div>
           </div>
 
+          {/* Payment Method */}
           <div className="mb-3">
             <label>Payment Method</label>
             <div className="input-group">
@@ -149,6 +177,7 @@ export default function MakePayments() {
             </div>
           </div>
 
+          {/* Description */}
           <div className="mb-3">
             <label>Description (optional)</label>
             <div className="input-group">
@@ -159,6 +188,21 @@ export default function MakePayments() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               ></textarea>
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="mb-3">
+            <label>Password</label>
+            <div className="input-group">
+              <span className="input-group-text"><FaCreditCard /></span>
+              <input
+                type="password"
+                className="form-control"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+              />
             </div>
           </div>
 

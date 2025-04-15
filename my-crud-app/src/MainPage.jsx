@@ -40,7 +40,7 @@ export default function MainPage() {
           <h4>FinBanker</h4>
         </div>
         <ul className="list-unstyled">
-          <li><Link to={`/main/${userId}`} className="text-white d-block mb-2">Dashboard</Link></li>
+          <li><Link to={`/mainpage/${userId}`} className="text-white d-block mb-2">Dashboard</Link></li>
           <li><Link to={`/make-payment/${userId}`} className="text-white d-block mb-2">Payment</Link></li>
           <li><Link to={`/past-payment/${userId}`} className="text-white d-block mb-2">E-Statement</Link></li>
           <li><Link to={`/fds/${userId}`} className="text-white d-block mb-2">FD List</Link></li>
