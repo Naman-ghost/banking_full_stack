@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";  // Import useParams
+import { useParams, useNavigate } from "react-router-dom";  // Added useNavigate
 import { Link } from "react-router-dom";
 
 export default function FDs() {
   const { userId } = useParams();  // Get userId from URL params
+  const navigate = useNavigate();  // Initialize navigate
 
   const [fds, setFDs] = useState([]);
 
@@ -23,8 +24,21 @@ export default function FDs() {
 
   return (
     <div className="container mt-5">
+      {/* Back Button */}
+      <button 
+        onClick={() => navigate(-1)} 
+        className="btn btn-secondary mb-3"
+      >
+        ← Back
+      </button>
+
       <h2 className="mb-4">Your Fixed Deposits</h2>
-      <Link to="/fixed-deposits/:userId" className="btn btn-success mb-3">Create New FD</Link>
+
+      {/* Corrected Link: dynamic userId */}
+      <Link to={`/fixed-deposits/${userId}`} className="btn btn-success mb-3">
+        Create New FD
+      </Link>
+
       {fds.length === 0 ? (
         <p>No Fixed Deposits found.</p>
       ) : (

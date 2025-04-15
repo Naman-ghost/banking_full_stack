@@ -18,6 +18,7 @@ import Admin_Customers from './admin_Customers';
 import Admin_Dashboard from './admin_Dashboard';
 import Admin_Transactions from './admin_Transactions';
 import Admin_CustomerManagement from './CustomerManagement';
+import UserDetails from './UserDetails';
 
 
 import './App.css';
@@ -52,6 +53,7 @@ function App() {
           path="/make-payment/:id"
           element={isLoggedIn ? <MakePayments /> : <Navigate to="/login" />}
         />
+         <Route path="/user-details/:userId" element={<UserDetails />} />
         <Route path="/home" element={<Home />} />
         <Route path="/create" element={<Create />} />
         <Route path="/read/:id" element={<Read />} />

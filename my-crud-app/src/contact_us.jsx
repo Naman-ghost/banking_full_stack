@@ -1,11 +1,25 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';  // Import useNavigate
 
 export default function ContactUs() {
+  const navigate = useNavigate();  // Initialize navigate function
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8 space-y-8">
+        
+        {/* Back Button */}
+        <button 
+          onClick={() => navigate(-1)} 
+          className="mb-4 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+        >
+          ← Back
+        </button>
+
         <h2 className="text-3xl font-semibold text-center text-indigo-600">Contact Us</h2>
-        <p className="text-lg text-center text-gray-600">We'd love to hear from you. Please reach out using the contact details below.</p>
+        <p className="text-lg text-center text-gray-600">
+          We'd love to hear from you. Please reach out using the contact details below.
+        </p>
 
         {/* Hardcoded Contact Information */}
         <div className="mt-10 text-center space-y-6">
@@ -14,15 +28,11 @@ export default function ContactUs() {
           {/* Helpline */}
           <div className="space-y-4">
             <p className="text-gray-700">Helpline: +91 123 456 7890</p>
-            
-            {/* Bank Address */}
-            <p className="text-gray-700">Bank Address: Lal Kila , New Delhi</p>
-            
-            {/* Email Address */}
+            <p className="text-gray-700">Bank Address: Lal Kila, New Delhi</p>
             <p className="text-gray-700">Email: customersupport@finbanker.com</p>
           </div>
 
-          {/* Optional: Add Social Media Links */}
+          {/* Social Media */}
           <h3 className="text-2xl font-semibold text-gray-700 mt-6">Follow Us On</h3>
           <div className="flex justify-center space-x-6 mt-4">
             <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800">

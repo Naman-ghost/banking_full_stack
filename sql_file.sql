@@ -74,16 +74,6 @@ CREATE TABLE past_payments (
     FOREIGN KEY (receiver_account_id) REFERENCES customers(id)
 );
 
-CREATE TABLE fixed_deposits (
-    fd_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    interest_rate DECIMAL(5,2) NOT NULL,
-    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    maturity_date DATETIME NOT NULL,
-    status ENUM('Active','Matured','Closed') NOT NULL DEFAULT 'Active',
-    FOREIGN KEY (user_id) REFERENCES customers(id)
-);
 
 
 

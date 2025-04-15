@@ -95,7 +95,7 @@ export default function Login({ onLoginSuccess }) {
             onClick={handleLogout}
             className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition duration-300"
           >
-            Logout
+            MAINPAGE
           </button>
         </div>
       </div>

@@ -4,14 +4,14 @@ import { useParams, useNavigate } from "react-router-dom";
 
 export default function FixedDeposits() {
   const { userId } = useParams(); 
+  const navigate = useNavigate();  // Initialize navigate
+
   const [amount, setAmount] = useState("");
   const [interestRate, setInterestRate] = useState(5.0);
   const [duration, setDuration] = useState(12);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [interestEarned, setInterestEarned] = useState(0);
-  const navigate = useNavigate();
-
 
   const calculateInterest = () => {
     if (amount && interestRate && duration) {
@@ -20,7 +20,6 @@ export default function FixedDeposits() {
     }
   };
 
-  // Recalculate interest when amount, rate, or duration changes
   useEffect(() => {
     calculateInterest();
   }, [amount, interestRate, duration]);
@@ -42,10 +41,9 @@ export default function FixedDeposits() {
     setIsLoading(true);
     setMessage("");
 
-    // Calculate maturityDate
     const now = new Date();
     const maturity = new Date(now.setMonth(now.getMonth() + parseInt(duration)));
-    const maturityDate = maturity.toISOString().slice(0, 19).replace("T", " "); // MySQL format
+    const maturityDate = maturity.toISOString().slice(0, 19).replace("T", " ");
 
     axios
       .post(`http://localhost:8081/fixed-deposits`, {
@@ -67,12 +65,22 @@ export default function FixedDeposits() {
 
   return (
     <div className="container mt-5">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="btn btn-secondary mb-3"
+      >
+        ← Back
+      </button>
+
       <h2>Create a Fixed Deposit</h2>
+
       {message && (
         <p className={`mt-3 ${message.includes("Successfully") ? "text-success" : "text-danger"}`}>
           {message}
         </p>
       )}
+
       <div className="mb-3">
         <label>Amount (₹)</label>
         <input
@@ -82,6 +90,7 @@ export default function FixedDeposits() {
           onChange={(e) => setAmount(e.target.value)}
         />
       </div>
+
       <div className="mb-3">
         <label>Duration (Months)</label>
         <input
@@ -91,6 +100,7 @@ export default function FixedDeposits() {
           onChange={(e) => setDuration(e.target.value)}
         />
       </div>
+
       <div className="mb-3">
         <label>Interest Rate (%)</label>
         <input
@@ -100,6 +110,7 @@ export default function FixedDeposits() {
           onChange={(e) => setInterestRate(e.target.value)}
         />
       </div>
+
       <div className="mb-3">
         <label>Interest Earned (₹)</label>
         <input
@@ -109,7 +120,12 @@ export default function FixedDeposits() {
           readOnly
         />
       </div>
-      <button className="btn btn-primary" onClick={handleCreateFD} disabled={isLoading}>
+
+      <button
+        className="btn btn-primary"
+        onClick={handleCreateFD}
+        disabled={isLoading}
+      >
         {isLoading ? "Creating FD..." : "Create FD"}
       </button>
     </div>

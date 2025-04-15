@@ -1,177 +1,180 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import {
-  FaArrowLeft,
-  FaCheck,
-  FaUser,
-  FaComments,
-  FaCreditCard,
-} from "react-icons/fa";
+import { CiBank } from "react-icons/ci";
+import { FaArrowLeft, FaCheck, FaUser, FaComments, FaCreditCard } from "react-icons/fa";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function MakePayments() {
   const navigate = useNavigate();
-  const { id: senderIdFromURL } = useParams(); // sender ID from URL
+  const { id: senderIdFromURL } = useParams();
   const [receiverId, setReceiverId] = useState("");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("RTGS");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
-  const [password, setPassword] = useState(""); // Password input for confirmation
-  const [isConfirming, setIsConfirming] = useState(false); // Flag to check if the user is confirming the transaction
+  const [isConfirming, setIsConfirming] = useState(false);
 
-  // Prevent page refresh during payment
   useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      if (isConfirming) return; // Don't show warning during transaction confirmation
-      const message = "Page is refreshing which is not allowed during transaction.";
-      event.returnValue = message; // Standard for most browsers
-      return message; // Some browsers require this as well for confirmation
+    const warnBeforeUnload = (e) => {
+      if (!isConfirming) {
+        const msg = "Refreshing will cancel your transaction!";
+        e.returnValue = msg;
+        return msg;
+      }
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
   }, [isConfirming]);
 
-  // Handle the payment request
   const handleMakePayment = async () => {
     if (!receiverId || !amount) {
       setMessage("Please fill in all required fields.");
       return;
     }
 
-    // Ask for confirmation before proceeding
-    const confirmation = prompt(
-      "Type 'YES' to confirm the transaction."
-    );
+    const confirmation = prompt("Type 'YES' to confirm the transaction.");
     if (confirmation !== "YES") {
       setMessage("Transaction cancelled.");
       return;
     }
 
-    // Ask user for their password to authorize the transaction
     setIsConfirming(true);
-    const enteredPassword = prompt("Please enter your password to confirm the payment.");
+    const enteredPassword = prompt("Enter your password to confirm the payment.");
     if (!enteredPassword) {
-      setMessage("Transaction cancelled due to missing password.");
+      setMessage("Transaction cancelled. No password provided.");
       setIsConfirming(false);
       return;
     }
 
     try {
-      const response = await axios.post(
-        `http://localhost:8081/make-payment/${senderIdFromURL}`, // sender in URL
-        {
-          receiverId,
-          amount,
-          method,
-          description,
-          password: enteredPassword, // Send password for verification
-        }
-      );
-
+      const response = await axios.post(`http://localhost:8081/make-payment/${senderIdFromURL}`, {
+        receiverId,
+        amount,
+        method,
+        description,
+        password: enteredPassword,
+      });
       setMessage(response.data.message || "Payment successful!");
-      setIsConfirming(false); // Reset confirmation flag after payment
     } catch (error) {
       console.error("Payment error:", error);
-      if (error.response?.data?.message) {
-        setMessage(error.response.data.message);
-      } else {
-        setMessage("Error processing payment.");
-      }
-      setIsConfirming(false); // Reset confirmation flag if error occurs
+      setMessage(error.response?.data?.message || "An error occurred during the payment.");
+    } finally {
+      setIsConfirming(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
-      <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
-          Make a Payment
-        </h2>
+    <div className="d-flex min-vh-100">
+      {/* Sidebar */}
+      <div className="bg-dark text-white p-4" style={{ width: '250px' }}>
+        <div className="d-flex align-items-center mb-4">
+          <CiBank size={30} className="me-2" />
+          <h4>FinBanker</h4>
+        </div>
+        <ul className="list-unstyled">
+          <li><Link to={`/main/${senderIdFromURL}`} className="text-white d-block mb-2">Dashboard</Link></li>
+          <li><Link to={`/make-payment/${senderIdFromURL}`} className="text-white d-block mb-2 fw-bold">Payment</Link></li>
+          <li><Link to={`/past-payment/${senderIdFromURL}`} className="text-white d-block mb-2">E-Statement</Link></li>
+          <li><Link to={`/fds/${senderIdFromURL}`} className="text-white d-block mb-2">FD List</Link></li>
+          <li><Link to={`/fixed-deposits/${senderIdFromURL}`} className="text-white d-block mb-2">Create FD</Link></li>
+          <li><Link to={`/contact`} className="text-white d-block mb-2">Contact</Link></li>
+        </ul>
+      </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center border p-3 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
-            <FaUser className="mr-2" />
-            <input
-              type="text"
-              value={senderIdFromURL}
-              disabled
-              className="w-full bg-transparent outline-none"
-            />
+      {/* Main Content */}
+      <div className="flex-grow-1 p-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2>Make a Payment</h2>
+          <button onClick={() => navigate('/login')} className="btn btn-danger">Logout</button>
+        </div>
+
+        <div className="card p-4 shadow-sm mx-auto" style={{ maxWidth: '600px' }}>
+          {message && (
+            <div className={`alert ${message.includes("success") ? "alert-success" : "alert-danger"}`} role="alert">
+              {message}
+            </div>
+          )}
+
+          <div className="mb-3">
+            <label>Sender ID</label>
+            <div className="input-group">
+              <span className="input-group-text"><FaUser /></span>
+              <input type="text" className="form-control" value={senderIdFromURL} disabled />
+            </div>
           </div>
 
-          <div className="flex items-center border p-3 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
-            <FaUser className="text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Receiver ID"
-              value={receiverId}
-              onChange={(e) => setReceiverId(e.target.value)}
-              className="w-full outline-none"
-            />
+          <div className="mb-3">
+            <label>Receiver ID</label>
+            <div className="input-group">
+              <span className="input-group-text"><FaUser /></span>
+              <input
+                type="text"
+                className="form-control"
+                value={receiverId}
+                onChange={(e) => setReceiverId(e.target.value)}
+                placeholder="Enter receiver's user ID"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center border p-3 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
-            <span className="text-gray-500 mr-2">₹</span>
-            <input
-              type="number"
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full outline-none"
-            />
+          <div className="mb-3">
+            <label>Amount (₹)</label>
+            <div className="input-group">
+              <span className="input-group-text">₹</span>
+              <input
+                type="number"
+                className="form-control"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center border p-3 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
-            <FaCreditCard className="text-gray-500 mr-2" />
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              className="w-full outline-none bg-transparent"
+          <div className="mb-3">
+            <label>Payment Method</label>
+            <div className="input-group">
+              <span className="input-group-text"><FaCreditCard /></span>
+              <select
+                className="form-select"
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+              >
+                <option value="RTGS">RTGS</option>
+                <option value="NEFT">NEFT</option>
+                <option value="UPI">UPI</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <label>Description (optional)</label>
+            <div className="input-group">
+              <span className="input-group-text"><FaComments /></span>
+              <textarea
+                className="form-control"
+                rows="2"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="d-flex justify-content-between">
+            <button className="btn btn-secondary" onClick={() => navigate(-1)}>
+              <FaArrowLeft className="me-1" /> Back
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleMakePayment}
+              disabled={isConfirming}
             >
-              <option value="RTGS">RTGS</option>
-              <option value="NEFT">NEFT</option>
-              <option value="UPI">UPI</option>
-            </select>
-          </div>
-
-          <div className="flex items-center border p-3 rounded-lg focus-within:ring-2 focus-within:ring-blue-500">
-            <FaComments className="text-gray-500 mr-2" />
-            <textarea
-              placeholder="Payment Description (Optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full outline-none"
-            ></textarea>
+              <FaCheck className="me-1" /> {isConfirming ? "Processing..." : "Pay Now"}
+            </button>
           </div>
         </div>
-
-        <div className="flex justify-between mt-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition"
-          >
-            <FaArrowLeft className="mr-2" /> Back
-          </button>
-
-          <button
-            onClick={handleMakePayment}
-            className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            disabled={isConfirming} // Disable the button during confirmation
-          >
-            <FaCheck className="mr-2" /> Pay Now
-          </button>
-        </div>
-
-        {message && (
-          <p className="mt-4 text-center text-sm font-semibold text-red-600">
-            {message}
-          </p>
-        )}
       </div>
     </div>
   );
