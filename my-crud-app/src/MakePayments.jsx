@@ -172,7 +172,7 @@ export default function MakePayments() {
               >
                 <option value="RTGS">RTGS</option>
                 <option value="NEFT">NEFT</option>
-                <option value="UPI">UPI</option>
+                <option value="UPI">IMPS</option>
               </select>
             </div>
           </div>

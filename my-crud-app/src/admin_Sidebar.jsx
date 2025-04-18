@@ -1,40 +1,21 @@
-// import { Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { FaTachometerAlt, FaUser, FaUserCog, FaHandshake } from "react-icons/fa"; // Icons for the sidebar
 
-// const Sidebar = () => {
-//   return (
-//     <div className="w-64 bg-blue-900 text-white h-full p-5">
-//       <h2 className="text-xl font-bold mb-6">Admin Panel</h2>
-//       <ul className="space-y-4">
-//         <li>
-//           <Link to="/dashboard" className="block py-2 px-4 hover:bg-blue-700 rounded">
-//             Dashboard
-//           </Link>
-//         </li>
-//         <li>
-//           <Link to="/customers" className="block py-2 px-4 hover:bg-blue-700 rounded">
-//             Customers
-//           </Link>
-//         </li>
-//         <li>
-//           <Link to="/customer-management" className="block py-2 px-4 hover:bg-blue-700 rounded">
-//             Customer Management
-//           </Link>
-//         </li>
-//         <li>
-//           <Link to="/transactions" className="block py-2 px-4 hover:bg-blue-700 rounded">
-//             Transactions
-//           </Link>
-//         </li>
-//       </ul>
-//     </div>
-//   );
-// };
+const menuItems = [
+  { name: "Dashboard", path: "/admin/dashboard", icon: <FaTachometerAlt /> },
+  { name: "Customers", path: "/admin/customers", icon: <FaUser /> },
+  { name: "Customer Management", path: "/admin/customer-management", icon: <FaUserCog /> },
+  { name: "Transactions", path: "/admin/transactions", icon: <FaHandshake /> },
+];
 
-// export default Sidebar;
+const AdminSidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-import { Link } from "react-router-dom";
+  const handleNavigation = (path) => {
+    navigate(path);
+  };
 
-const admin_Sidebar = () => {
   return (
     <div className="w-64 bg-blue-900 text-white h-screen fixed top-0 left-0 overflow-y-auto shadow-lg">
       <div className="p-5 sticky top-0 bg-blue-900 z-10 border-b border-blue-800">
@@ -42,41 +23,31 @@ const admin_Sidebar = () => {
       </div>
 
       <ul className="p-5 space-y-3">
-        <li>
-          <Link
-            to="/admin_dashboard"
-            className="block py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
-          >
-            Dashboard
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/admin_customers"
-            className="block py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
-          >
-            Customers
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/admin_customer-management"
-            className="block py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
-          >
-            Customer Management
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/admin_transactions"
-            className="block py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
-          >
-            Transactions
-          </Link>
-        </li>
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <li key={item.name}>
+              <button
+                onClick={() => handleNavigation(item.path)}
+                className={`flex items-center gap-4 px-4 py-3 rounded-lg w-full text-left transition-all duration-300 ease-in-out ${
+                  isActive
+                    ? "bg-blue-800 text-white font-semibold shadow-lg"
+                    : "hover:bg-blue-600 hover:text-white hover:font-medium"
+                }`}
+              >
+                <span
+                  className={`w-6 h-6 rounded-full ${isActive ? "bg-blue-400" : "bg-blue-600"}`}
+                >
+                  {item.icon}
+                </span>
+                <span className={`flex-1 ${isActive ? "text-white" : "text-blue-100"}`}>{item.name}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 };
 
-export default admin_Sidebar;
+export default AdminSidebar;

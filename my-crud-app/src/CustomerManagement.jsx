@@ -154,6 +154,12 @@ const CustomerManagement = () => {
         }
     };
 
+    const getMaxDOB = () => {
+        const today = new Date();
+        today.setFullYear(today.getFullYear() - 0); 
+        return today.toISOString().split("T")[0];
+    };
+
     const handleAddCustomer = async () => {
         const {
             username, email, password,
@@ -162,6 +168,20 @@ const CustomerManagement = () => {
 
         if (!username || !email || !password || !first_name || !last_name || !phone || !address || !city || !date_of_birth) {
             toast.warning("Please fill all fields.");
+            return;
+        }
+
+        // Age validation: Must be at least 4 years old
+        const dob = new Date(date_of_birth);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+
+        if (age < 0) {
+            toast.error("Customer must exist in real life.");
             return;
         }
 
@@ -215,7 +235,6 @@ const CustomerManagement = () => {
                             { label: "Phone", key: "phone", type: "text" },
                             { label: "Address", key: "address", type: "text" },
                             { label: "City", key: "city", type: "text" },
-                            { label: "Date of Birth", key: "date_of_birth", type: "date" },
                         ].map(({ label, key, type }) => (
                             <div key={key}>
                                 <label className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
@@ -228,6 +247,19 @@ const CustomerManagement = () => {
                             </div>
                         ))}
 
+                        {/* Date of Birth with Age Constraint */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">Date of Birth</label>
+                            <input
+                                type="date"
+                                value={newCustomer.date_of_birth}
+                                onChange={(e) => setNewCustomer({ ...newCustomer, date_of_birth: e.target.value })}
+                                max={getMaxDOB()}
+                                className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            />
+                        </div>
+
+                        {/* Gender */}
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">Gender</label>
                             <select
@@ -294,4 +326,3 @@ const CustomerManagement = () => {
 };
 
 export default CustomerManagement;
-

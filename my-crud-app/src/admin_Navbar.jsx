@@ -1,23 +1,34 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import AdminAuthContext from "./AdminAuthContext";
 
-function Navbar({ setIsAuthenticated }) {
+const AdminNavbar = () => {
   const navigate = useNavigate();
+  const { setIsAdminAuthenticated } = useContext(AdminAuthContext);
 
   const handleLogout = () => {
-    setIsAuthenticated(false); // You can set authentication state to false
-    navigate('/admin_Login'); // Navigate to the login page (or wherever you want to go)
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminName");
+    setIsAdminAuthenticated(false);
+    navigate("/admin_login");
   };
 
   return (
-    <nav className="bg-white shadow p-4 flex justify-end ml-64">
+    <div className="fixed top-0 left-64 right-0 z-50 bg-gradient-to-r from-indigo-600 to-blue-600 p-4 text-white flex justify-between items-center shadow-lg">
+      {/* Welcome Text */}
+      <div className="text-2xl font-semibold">
+        Welcome to <span className="font-extrabold text-yellow-400">Finbanker</span>
+      </div>
+
+      {/* Logout Button */}
       <button
         onClick={handleLogout}
-        className="bg-red-500 text-white px-4 py-2 rounded"
+        className="bg-red-500 px-6 py-2 rounded hover:bg-red-600 transition-all duration-300"
       >
         Logout
       </button>
-    </nav>
+    </div>
   );
-}
+};
 
-export default Navbar;
+export default AdminNavbar;

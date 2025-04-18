@@ -2,8 +2,12 @@ import express from 'express';
 import mysql from 'mysql';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const app = express();
+
+// MySQL connection
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -12,165 +16,21 @@ const db = mysql.createConnection({
 });
 
 db.connect((err) => {
-    if (err) {
-        console.error("Error connecting to MySQL: " + err.stack);
-        return;
-    }
-    console.log("Connected to MySQL as id " + db.threadId);
+  if (err) {
+    console.error("Error connecting to MySQL: " + err.stack);
+    return;
+  }
+  console.log("Connected to MySQL as id " + db.threadId);
 });
 
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// app.get('/', (req, res) => {
-//     const sql = "SELECT * FROM alpha";
-//     db.query(sql, (err, result) => {
-//         if (err) {
-//             console.error("Error executing query:", err);
-//             return res.status(500).json({ Message: "Error inside server" });
-//         }
-//         return res.json(result);
-//     });
-// });
-// app.post('/make-payment/:id', (req, res) => {
-//     const { id } = req.params; 
-//     const { receiverId, amount, method, description } = req.body;
+// JWT secret
+const JWT_SECRET = "your_jwt_secret";
 
-//     if (!receiverId || !amount || isNaN(amount) || amount <= 0) {
-//         return res.status(400).json({ message: "Valid receiver ID and amount are required" });
-//     }
-//     db.beginTransaction((err) => {
-//         if (err) {
-//             console.error("Transaction error:", err);
-//             return res.status(500).json({ message: "Transaction initiation failed" });
-//         }
-
-//         db.query("SELECT bank_balance FROM customers WHERE id = ?", [id], (err, senderResult) => {
-//             if (err) {
-//                 return db.rollback(() => {
-//                     console.error("Error fetching sender balance:", err);
-//                     res.status(500).json({ message: "Error retrieving sender balance" });
-//                 });
-//             }
-//             if (senderResult.length === 0 || senderResult[0].bank_balance < amount) {
-//                 return db.rollback(() => {
-//                     res.status(400).json({ message: "Insufficient balance or sender not found" });
-//                 });
-//             }
-//             db.query("UPDATE customers SET bank_balance = bank_balance - ? WHERE id = ?", [amount, id], (err) => {
-//                 if (err) {
-//                     return db.rollback(() => {
-//                         console.error("Error deducting sender balance:", err);
-//                         res.status(500).json({ message: "Error deducting sender balance" });
-//                     });
-//                 }
-//                 db.query("UPDATE customers SET bank_balance = bank_balance + ? WHERE id = ?", [amount, receiverId], (err) => {
-//                     if (err) {
-//                         return db.rollback(() => {
-//                             console.error("Error adding receiver balance:", err);
-//                             res.status(500).json({ message: "Error adding receiver balance" });
-//                         });
-//                     }
-//                     const paymentSql = `INSERT INTO Past_Payments 
-//                         (sender_account_id, receiver_account_id, payment_amount, payment_date, payment_status, payment_method, description) 
-//                         VALUES (?, ?, ?, NOW(), 'Completed', ?, ?)`;
-
-//                     db.query(paymentSql, [id, receiverId, amount, method, description], (err) => {
-//                         if (err) {
-//                             return db.rollback(() => {
-//                                 console.error("Error recording payment:", err);
-//                                 res.status(500).json({ message: "Error recording payment" });
-//                             });
-//                         }
-//                         db.commit((err) => {
-//                             if (err) {
-//                                 return db.rollback(() => {
-//                                     console.error("Transaction commit failed:", err);
-//                                     res.status(500).json({ message: "Transaction commit failed" });
-//                                 });
-//                             }
-//                             res.json({ message: `Payment of ₹${amount} sent successfully from Customer ${id} to ${receiverId}` });
-//                         });
-//                     });
-//                 });
-//             });
-//         });
-//     });
-// });
-// app.post('/make-payment/:id', (req, res) => {
-//     const { id } = req.params;
-//     const { receiverId, amount, method, description } = req.body;
-//     if (!receiverId || !amount || isNaN(amount) || amount <= 0) {
-//         return res.status(400).json({ message: "Valid receiver ID and amount are required" });
-//     }
-//     db.beginTransaction((err) => {
-//         if (err) {
-//             console.error("Transaction error:", err);
-//             return res.status(500).json({ message: "Transaction initiation failed" });
-//         }
-
-//         const balanceCheckQuery = `
-//             SELECT s.bank_balance AS sender_balance, r.bank_balance AS receiver_balance
-//             FROM customers s
-//             JOIN customers r ON r.id = ?
-//             WHERE s.id = ?;
-//         `;
-//         db.query(balanceCheckQuery, [receiverId, id], (err, results) => {
-//             if (err) {
-//                 return db.rollback(() => {
-//                     console.error("Error fetching balances:", err);
-//                     res.status(500).json({ message: "Error retrieving balances" });
-//                 });
-//             }
-//             if (results.length === 0 || results[0].sender_balance < amount) {
-//                 return db.rollback(() => {
-//                     res.status(400).json({ message: "Insufficient balance or invalid sender/receiver" });
-//                 });
-//             }
-//             const updateSender = "UPDATE customers SET bank_balance = bank_balance - ? WHERE id = ?";
-//             db.query(updateSender, [amount, id], (err) => {
-//                 if (err) {
-//                     return db.rollback(() => {
-//                         console.error("Error deducting sender balance:", err);
-//                         res.status(500).json({ message: "Error deducting sender balance" });
-//                     });
-//                 }
-//                 const updateReceiver = "UPDATE customers SET bank_balance = bank_balance + ? WHERE id = ?";
-//                 db.query(updateReceiver, [amount, receiverId], (err) => {
-//                     if (err) {
-//                         return db.rollback(() => {
-//                             console.error("Error adding receiver balance:", err);
-//                             res.status(500).json({ message: "Error adding receiver balance" });
-//                         });
-//                     }
-//                     const paymentSql = `
-//                         INSERT INTO past_payments 
-//                         (sender_account_id, receiver_account_id, payment_amount, payment_date, payment_status, payment_method, description)
-//                         VALUES (?, ?, ?, NOW(), 'Completed', ?, ?);
-//                     `;
-//                     db.query(paymentSql, [id, receiverId, amount, method, description], (err) => {
-//                         if (err) {
-//                             return db.rollback(() => {
-//                                 console.error("Error recording payment:", err);
-//                                 res.status(500).json({ message: "Error recording payment" });
-//                             });
-//                         }
-//                         db.commit((err) => {
-//                             if (err) {
-//                                 return db.rollback(() => {
-//                                     console.error("Transaction commit failed:", err);
-//                                     res.status(500).json({ message: "Transaction commit failed" });
-//                                 });
-//                             }
-//                             res.json({ message: `Payment of ₹${amount} sent successfully from Customer ${id} to ${receiverId}` });
-//                         });
-//                     });
-//                 });
-//             });
-//         });
-//     });
-// });
-
+////
 
 app.get('/mainpage/:userId', (req, res) => {
     const id = req.params.userId;
@@ -191,14 +51,7 @@ app.get('/mainpage/:userId', (req, res) => {
     });
 });
 
-
-
-
 //    LOGIN PAGE 
-
-
-
-
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
@@ -233,11 +86,6 @@ app.post('/login', (req, res) => {
         });
     });
 });
-
-
-//
-
-
 
 
 app.get('/read/:id', (req, res) => {
@@ -320,21 +168,8 @@ app.get('/past-payments/:userId', (req, res) => {
   });
 
 
-  
+/////  MAKE PAYMENT
 
-
-
-
-//    MAKE PAYMENT
-
-
-
-
-
-
-
-
-  
 app.post('/make-payment/:id', (req, res) => {
     const { id: senderId } = req.params; // senderId from URL
     const { receiverId, amount, method, description, password } = req.body; // Extract the password from the body
@@ -427,7 +262,7 @@ app.post('/make-payment/:id', (req, res) => {
                   });
                 }
   
-                // Send success response
+                // ✅ Fix: use backticks for template literal response
                 res.json({
                   message: `₹${amount} successfully transferred from your account to ${receiver_username}`,
                 });
@@ -438,35 +273,6 @@ app.post('/make-payment/:id', (req, res) => {
       });
     });
   });
-  
-  
-  
-  
-
-
-
-
-
-
-
-
-
-
-
-
-// app.post('/fixed-deposits', (req, res) => {
-//     const { userId, amount, interestRate, duration } = req.body;
-  
-//     // Add logic to handle FD creation here
-  
-//     res.status(200).json({ message: 'Fixed Deposit created successfully!' });
-//   });
-
-// Fix for /create-fd route
-
-
-
-
 
 
 // fixed-deposits
@@ -560,7 +366,6 @@ app.post('/fixed-deposits', (req, res) => {
 
 
 // FD Details Route (Fix for query params)
-// Backend: Express.js route to fetch FD details
 app.get('/fds/:userId', (req, res) => {
     const userId = req.params.userId;
   
@@ -625,83 +430,152 @@ app.post('/fds/break/:userId/:fdId', (req, res) => {
     });
   });
   
+
+
+
+
   
-
-
-
-
-
-
 
 
 
 // VISVJIT 
 
+//authentication
+app.post('/admin-login', (req, res) => {
+    const { email, password } = req.body;
+
+    db.query("SELECT * FROM admins WHERE email = ?", [email], async (err, results) => {
+        if (err) {
+            console.error("DB Error:", err);
+            return res.status(500).json({ message: "Server error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(401).json({ message: "Invalid email or password" });
+        }
+
+        const admin = results[0];
+
+        try {
+            const isMatch = await bcrypt.compare(password, admin.password);
+            if (!isMatch) {
+                return res.status(401).json({ message: "Invalid email or password" });
+            }
+
+            const token = jwt.sign(
+                { id: admin.id, email: admin.email, name: admin.name },
+                JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+
+            res.json({
+                token,
+                message: "Login successful!",
+                admin: {
+                    id: admin.id,
+                    name: admin.name,
+                    email: admin.email
+                }
+            });
+
+        } catch (err) {
+            console.error("Bcrypt error:", err);
+            res.status(500).json({ message: "Server error" });
+        }
+    });
+});
 
 
+app.post('/create-admin', (req, res) => {
+    const { name, email, password } = req.body;
+
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
+        if (err) {
+            console.error("Hashing error:", err);
+            return res.status(500).json({ message: "Error creating admin" });
+        }
+
+        db.query(
+            "INSERT INTO admins (name, email, password) VALUES (?, ?, ?)",
+            [name, email, hashedPassword],
+            (err, result) => {
+                if (err) {
+                    console.error("DB Insert Error:", err);
+                    return res.status(500).json({ message: "Error creating admin" });
+                }
+
+                res.json({ message: "Admin created successfully" });
+            }
+        );
+    });
+});
+
+
+//admin work
 
 app.post('/add-customer', (req, res) => {
     const {
-        username, password, email,
-        first_name, last_name, phone, address,
-        city, date_of_birth, gender
+      username, password, email,
+      first_name, last_name, phone, address,
+      city, date_of_birth, gender
     } = req.body;
-
-    db.query(`SELECT IFNULL(MAX(id), 0) + 1 AS nextId FROM customers`, (err, result) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, error: err.message });
-        }
-
-        const nextId = result[0].nextId;
-
-        db.beginTransaction(err => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ success: false, error: err.message });
-            }
-
-            db.query(
-                `INSERT INTO customers (id, username, password, email, bank_balance) VALUES (?, ?, ?, ?, 0)`,
-                [nextId, username, password, email],
-                (err, result) => {
-                    if (err) {
-                        return db.rollback(() => {
-                            console.error(err);
-                            res.status(500).json({ success: false, error: err.message });
-                        });
-                    }
-
-                    db.query(
-                        `INSERT INTO customerinfo 
-                         (username, first_name, last_name, phone, address, city, date_of_birth, gender) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [username, first_name, last_name, phone, address, city, date_of_birth, gender],
-                        (err, result) => {
-                            if (err) {
-                                return db.rollback(() => {
-                                    console.error(err);
-                                    res.status(500).json({ success: false, error: err.message });
-                                });
-                            }
-
-                            db.commit(err => {
-                                if (err) {
-                                    return db.rollback(() => {
-                                        console.error(err);
-                                        res.status(500).json({ success: false, error: err.message });
-                                    });
-                                }
-
-                                res.json({ success: true, message: "Customer and info added!", customerId: nextId });
-                            });
-                        }
-                    );
+  
+    // Future date check for DOB
+    const today = new Date();
+    const dob = new Date(date_of_birth);
+    if (dob > today) {
+      return res.status(400).json({ success: false, message: "Date of birth cannot be in the future." });
+    }
+  
+    db.beginTransaction(err => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+  
+    db.query(
+        `INSERT INTO customers (username, password, email, bank_balance) VALUES (?, ?, ?, 0)`,
+        [username, password, email],
+        (err, result) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error(err);
+              res.status(500).json({ success: false, error: err.message });
+            });
+          }
+  
+          const insertedCustomerId = result.insertId; // Auto-incremented ID
+  
+          db.query(
+            `INSERT INTO customerinfo 
+              (username, first_name, last_name, phone, address, city, date_of_birth, gender) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [username, first_name, last_name, phone, address, city, date_of_birth, gender],
+            (err, result) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error(err);
+                  res.status(500).json({ success: false, error: err.message });
+                });
+              }
+  
+              db.commit(err => {
+                if (err) {
+                  return db.rollback(() => {
+                    console.error(err);
+                    res.status(500).json({ success: false, error: err.message });
+                  });
                 }
-            );
-        });
+  
+                res.json({ success: true, message: "Customer and info added!", customerId: insertedCustomerId });
+              });
+            }
+          );
+        }
+      );
     });
-});
+  });
+  
 
 // Deposit money
 app.post('/deposit', (req, res) => {
@@ -877,26 +751,6 @@ app.get('/today-transactions-amount', (req, res) => {
         res.json({ totalToday: result[0].totalToday });
     });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

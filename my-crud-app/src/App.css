@@ -1,0 +1,132 @@
+/* General Body and App Setup */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f8f8;
+    margin: 0;
+    padding: 0;
+  }
+  
+  * {
+    box-sizing: border-box;
+  }
+  
+  /* Transition Effects for Pages */
+  .fade-enter {
+    opacity: 0;
+  }
+  
+  .fade-enter-active {
+    opacity: 1;
+    transition: opacity 300ms ease-in-out;
+  }
+  
+  .fade-exit {
+    opacity: 1;
+  }
+  
+  .fade-exit-active {
+    opacity: 0;
+    transition: opacity 300ms ease-in-out;
+  }
+  
+  /* Sliding Effect - Example */
+  .slide-enter {
+    transform: translateX(100%);
+  }
+  
+  .slide-enter-active {
+    transform: translateX(0);
+    transition: transform 300ms ease-out;
+  }
+  
+  .slide-exit {
+    transform: translateX(0);
+  }
+  
+  .slide-exit-active {
+    transform: translateX(100%);
+    transition: transform 300ms ease-in;
+  }
+  
+  /* Apply transitions to container or root elements */
+  .transition-group {
+    position: relative;
+  }
+  
+  .transition-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+  
+  /* Optional: Add some global styles for general layout */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  /* Add a smooth fade-in effect for the homepage */
+  .home {
+    transition: opacity 0.5s ease-in-out;
+  }
+  
+  .home-loaded {
+    opacity: 1;
+  }
+  
+  .home-loading {
+    opacity: 0;
+  }
+  
+  /* Navbar Styles (If you have one) */
+  .navbar {
+    background-color: #333;
+    padding: 10px 20px;
+    color: #fff;
+  }
+  
+  .navbar a {
+    color: #fff;
+    text-decoration: none;
+    margin-right: 15px;
+  }
+  
+  .navbar a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Styling buttons for consistency */
+  button {
+    padding: 10px 20px;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Styling for links (if any) */
+  a {
+    color: #007bff;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Add basic footer styles */
+  footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 20px 0;
+  }
+  
